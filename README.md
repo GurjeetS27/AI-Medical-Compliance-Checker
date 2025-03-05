@@ -42,7 +42,7 @@ An AI-powered compliance assistant that helps healthcare professionals check med
     streamlit run app.py
    ```
 
-📌 What’s Next?
-🔹 Deploying live on Hugging Face & Render.
-🔹 Adding compliance regulation search using Pinecone.
-🔹 Automating AI-powered compliance audits.
+## 📌 What’s Next?
+- Deploying live on Hugging Face & Render.
+- Adding compliance regulation search using Pinecone.
+-  Automating AI-powered compliance audits.
