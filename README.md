@@ -1,12 +1,15 @@
-🩺 AI Medical Compliance Checker
-🚀 An AI-powered compliance assistant that helps healthcare professionals check medical regulations easily.
+# 🩺 AI Medical Compliance Checker
+
+## 🚀 Overview
+
+An AI-powered compliance assistant that helps healthcare professionals check medical regulations easily.
 
 ## 📌 Features
 
-✅ Instant Compliance Checks – Ask any compliance-related question, and AI provides accurate responses.
-✅ HIPAA & FDA Regulations – Ensures medical compliance based on official policies.
-✅ User-Friendly Web Interface – Built with Streamlit for easy access.
-✅ AI-Powered Accuracy – Uses OpenAI's GPT-4 for reliable answers.
+- ✅ **Instant Compliance Checks** – Ask any compliance-related question, and AI provides accurate responses.
+- ✅ **HIPAA & FDA Regulations** – Ensures medical compliance based on official policies.
+- ✅ **User-Friendly Web Interface** – Built with Streamlit for easy access.
+- ✅ **AI-Powered Accuracy** – Uses OpenAI's GPT-4 for reliable answers.
 
 ## 💻 Tech Stack
 
@@ -16,7 +19,8 @@
 **🛠 Backend:** Python
 **🔍 Future Features:** Pinecone (Vector Search) + LangChain (AI Workflows)
 
-🚀 Live Demo
+## 🚀 Live Demo
+
 🔗 [Coming Soon – Hosted on Hugging Face/Render]
 
 ## 🛠️ Setup Instructions
