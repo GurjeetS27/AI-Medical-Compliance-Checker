@@ -21,7 +21,7 @@ An AI-powered compliance assistant that helps healthcare professionals check med
 
 ## 🚀 Live Demo
 
-🔗 **[Try it Live]([https://your-deployed-link.com](https://huggingface.co/spaces/GurjeetS27/AI-Medical-Compliance-Checker))**
+🔗 **[Try it Live](https://huggingface.co/spaces/GurjeetS27/AI-Medical-Compliance-Checker)**
 
 ## 🛠️ Setup Instructions
 
