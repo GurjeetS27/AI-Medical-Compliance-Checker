@@ -1,3 +1,6 @@
 openai
 streamlit
 python-dotenv
+pinecone
+time
+fitz
