@@ -18,15 +18,6 @@ client = openai.OpenAI(api_key=OPENAI_API_KEY)  # ✅ Updated for latest OpenAI 
 pc=Pinecone(api_key=PINECONE_API_KEY)
 index = pc.Index("compliance-regulations")  # Ensure this matches your Pinecone index name
 
-# Predefined compliance regulations for storage
-COMPLIANCE_DOCUMENTS = [
-    {"id": "HIPAA-001", "text": "Under HIPAA, patients have the right to access their medical records within 30 days of a request."},
-    {"id": "HIPAA-002", "text": "HIPAA requires healthcare providers to keep patient data confidential and secure."},
-    {"id": "HIPAA-003", "text": "Healthcare providers must obtain written consent before sharing patient information with third parties."},
-    {"id": "FDA-001", "text": "The FDA mandates that all medical devices undergo rigorous testing before market approval."},
-    {"id": "FDA-002", "text": "Pharmaceutical companies must conduct clinical trials before a drug receives FDA approval."}
-]
-
 # ✅ Extract text from uploaded files (PDF or TXT)
 def extract_text_from_file(file):
     text = ""
@@ -50,13 +41,18 @@ def create_embedding(text):
         print(f"❌ Error generating embedding: {e}")
         return None
 
+# You can manually store compliance documents here example
+# COMPLIANCE_DOCUMENTS = [
+#     {"id": "HIPAA-001", "text": "Under HIPAA, patients have the right to access their medical records within 30 days of a request."},
+# ]
+
 # ✅ Store Compliance Documents in Pinecone
-def store_compliance_documents():
-    for doc in COMPLIANCE_DOCUMENTS:
-        embedding = create_embedding(doc["text"])
-        if embedding:
-            index.upsert(vectors=[{"id": doc["id"], "values": embedding, "metadata": {"text": doc["text"]}}])
-            print(f"✅ Stored document {doc['id']} in Pinecone.")
+# def store_compliance_documents():
+#     for doc in COMPLIANCE_DOCUMENTS:
+#         embedding = create_embedding(doc["text"])
+#         if embedding:
+#             index.upsert(vectors=[{"id": doc["id"], "values": embedding, "metadata": {"text": doc["text"]}}])
+#             print(f"✅ Stored document {doc['id']} in Pinecone.")
 
 # ✅ Store Extracted Text in Pinecone
 def store_uploaded_document(file):
