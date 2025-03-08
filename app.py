@@ -10,6 +10,7 @@ import fitz
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+ADMIN_SECRET = os.getenv("ADMIN_SECRET")
 
 # Initialize OpenAI API
 client = openai.OpenAI(api_key=OPENAI_API_KEY)  # ✅ Updated for latest OpenAI API
@@ -34,7 +35,7 @@ def create_embedding(text):
     try:
         response = client.embeddings.create(
             model="text-embedding-3-small",
-            input=[text]  # ✅ OpenAI now requires input as a list
+            input=[text]
         )
         return response.data[0].embedding
     except Exception as e:
@@ -55,18 +56,21 @@ def create_embedding(text):
 #             print(f"✅ Stored document {doc['id']} in Pinecone.")
 
 # ✅ Store Extracted Text in Pinecone
-def store_uploaded_document(file):
-    """Extracts text from a file and stores it in Pinecone."""
+def store_uploaded_document(file, user_key):
+    """Handles document uploads: Admins can store in Pinecone, users get temporary usage."""
     text = extract_text_from_file(file)
-    if not text.strip():  # ✅ Prevents empty PDFs from being stored
+    if not text.strip():
         return "⚠️ The uploaded document is empty or non-readable. Please upload a valid compliance document."
     embedding = create_embedding(text)
-    if embedding:
-        doc_id = file.name
+    if not embedding:
+        return "⚠️ Failed to process document embedding."
+    doc_id = file.name
+    # ✅ Admins can permanently store documents in Pinecone
+    if user_key == ADMIN_SECRET:
         index.upsert(vectors=[{"id": doc_id, "values": embedding, "metadata": {"text": text}}])
-        return f"✅ Successfully stored: {doc_id}"
-    
-    return "⚠️ Failed to store document."
+        return f"✅ Successfully stored in Pinecone: {doc_id}"
+    # ✅ Regular users: Use document only for this session (do not store in Pinecone)
+    return f"⚠️ Temporary Use Only: {doc_id} will not be stored in Pinecone."
 
 # ✅ Search for Compliance Documents in Pinecone
 def search_compliance_documents(query):
@@ -81,9 +85,9 @@ def search_compliance_documents(query):
         best_match = search_results["matches"][0]
         similarity_threshold = 0.45  
         if best_match["score"] >= similarity_threshold:
-            print(f"\n✅ Using Pinecone Result (Score: {best_match['score']}): {best_match['metadata']['text']}")
+            # print(f"\n✅ Using Pinecone Result (Score: {best_match['score']}): {best_match['metadata']['text']}")
             return best_match["metadata"]["text"]
-    print("\n❌ No relevant result found in Pinecone, using OpenAI only.")
+    # print("\n❌ No relevant result found in Pinecone, using OpenAI only.")
     return None  
 
 
@@ -171,22 +175,67 @@ st.set_page_config(page_title="AI Medical Compliance Checker", page_icon="🩺",
 st.markdown(
     """
     <style>
+        /* Global Background */
         .reportview-container {
-            background: #f8f9fa;
+            background: #ffffff;  /* Clean white background */
         }
-        .stTextArea textarea {
-            font-size: 16px;
-            padding: 10px;
+
+        /* Move the UI Up Slightly */
+        .block-container {
+            padding-top: 0rem !important;
+            margin-top: 30px !important;
         }
+
+        /* Text Area & Input Fields */
+        .stTextArea textarea, .stTextInput input {
+            font-size: 16px !important;
+            padding: 12px !important;
+            border: 1px solid #ccc !important;
+            border-radius: 8px !important;
+            box-shadow: none !important;  /* Remove extra shadows */
+            transition: 0.2s ease-in-out;
+            outline: none !important;  /* Removes extra blue outline */
+        }
+        .stTextArea textarea:focus, .stTextInput input:focus {
+            box-shadow: 0px 0px 8px rgba(0, 123, 255, 0.3) !important;
+            outline: none !important;  /* Ensures clean focus */
+        }
+
+        /* Button Styling */
         .stButton>button {
-            font-size: 18px;
-            background-color: #ff4b4b;
-            color: white;
-            border-radius: 8px;
+            font-size: 18px !important;
+            background-color: #007BFF !important;
+            color: white !important;
+            border-radius: 8px !important;
+            padding: 12px 24px !important;
+            font-weight: bold !important;
+            border: none !important;
+            transition: 0.3s ease-in-out;
         }
-        .stSubheader {
-            color: #ff4b4b;
+        .stButton>button:hover {
+            background-color: #0056b3 !important;
+            box-shadow: 0px 4px 12px rgba(0, 91, 187, 0.3) !important;
         }
+
+        /* File Uploader */
+        .stFileUploader {
+            border: 2px solid #ddd !important;
+            border-radius: 8px !important;
+            padding: 10px !important;
+            background-color: #f8f9fa !important;
+            transition: 0.3s ease-in-out;
+        }
+        .stFileUploader:hover {
+            border: 2px solid #007BFF !important;
+            background-color: #f0f8ff !important;
+        }
+
+        /* Admin Hint Text */
+        .admin-hint {
+            font-size: 12px !important;
+            color: #777 !important;
+        }
+
     </style>
     """,
     unsafe_allow_html=True
@@ -197,9 +246,12 @@ st.write("### Upload compliance documents (PDF or TXT) to train the AI.")
 
 # ✅ File Upload Section
 uploaded_file = st.file_uploader("Upload Compliance Document (PDF or TXT)", type=["pdf", "txt"])
+user_key = st.text_input("Enter Admin Key (Only for permanent storage)", type="password") # Hidden password field
+st.markdown('<p class="admin-hint">Leave blank if you are not an admin.</p>', unsafe_allow_html=True)
+
 
 if uploaded_file:
-    result = store_uploaded_document(uploaded_file)
+    result = store_uploaded_document(uploaded_file, user_key)
     st.success(result)
 
 st.write("### Ask a compliance-related question:")
