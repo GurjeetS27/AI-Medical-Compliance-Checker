@@ -74,19 +74,19 @@ def store_uploaded_document(file):
 
 # ✅ Search for Compliance Documents in Pinecone
 def search_compliance_documents(query):
-    """Searches Pinecone for the most relevant compliance document."""
+    """Searches Pinecone only if the index contains compliance documents."""
+    if is_pinecone_empty():  # Check if Pinecone has any stored data
+        print("\n⚠️ Pinecone is empty. Skipping search and defaulting to OpenAI.")
+        return None  
     query_embedding = create_embedding(query)
     search_results = index.query(vector=query_embedding, top_k=5, include_metadata=True)
-    print("\n🔍 Pinecone Search Results:", search_results)  # ✅ Debugging log
+    print("\n🔍 Pinecone Search Results:", search_results) 
     if search_results and search_results["matches"]:
         best_match = search_results["matches"][0]
-        similarity_threshold = 0.50  # 🔥 Lowered from 0.55
+        similarity_threshold = 0.45  
         if best_match["score"] >= similarity_threshold:
             print(f"\n✅ Using Pinecone Result (Score: {best_match['score']}): {best_match['metadata']['text']}")
             return best_match["metadata"]["text"]
-        else:
-            print(f"\n❌ No highly relevant result found (Score: {best_match['score']}), defaulting to OpenAI.")
-            return None  
     print("\n❌ No relevant result found in Pinecone, using OpenAI only.")
     return None  
 
@@ -140,35 +140,33 @@ def get_compliance_answer(question):
     # ✅ Step 3: Search for compliance document in Pinecone
     relevant_document = search_compliance_documents(question)
 
-    if relevant_document:
-        prompt = f"Based on this compliance regulation: {relevant_document}, answer the question: {question}"
-        source = "Pinecone ✅"
-    else:
-        prompt = question
-        source = "OpenAI Only ❌"
+    # ✅ NEW: Optimized OpenAI call to format response directly
+    prompt = f"""
+    Provide a structured and well-formatted compliance response.
+    Use bullet points, section headers, and a final summary for clarity.
+    Ensure legal terminology is precise.
 
-    try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.2
-        )
-        final_answer = response.choices[0].message.content
+    Compliance Regulation: {relevant_document if relevant_document else 'No relevant document found'}.
 
-         # 🔹 NEW: Format response for readability using OpenAI
-        formatting_prompt = f"Format the following compliance answer into clear bullet points, section headers, and a final summary:\n\n{final_answer}"
-        formatted_response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": formatting_prompt}],
-        temperature=0
-        )
-        final_answer = formatted_response.choices[0].message.content
-    except Exception as e:
-        final_answer = "⚠️ Error generating response."
-        source = "Error ❌"
+    Question: {question}
+    """
+    source = "Pinecone ✅" if relevant_document else "OpenAI Only ❌"
 
-    return f"{final_answer}\n\n(Source: {source})"
+    attempts = 0
+    while attempts < 2:  # ✅ NEW: Retry mechanism for OpenAI failures
+        try:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2
+            )
+            return f"{response.choices[0].message.content}\n\n(Source: {source})"
+        except openai.error.OpenAIError as e:
+            print(f"⚠️ OpenAI API Error: {e}")
+            time.sleep(2)  # Wait before retrying
+            attempts += 1
 
+    return "⚠️ OpenAI is currently unavailable. Please try again later.\n\n(Source: API Error 🚫)"
 
 
 # ✅ Streamlit UI
@@ -214,10 +212,8 @@ query = st.text_area("Enter your question here:", height=100)
 
 if st.button("Check Compliance"):
     if query.strip():
-        with st.spinner("🔍 Searching compliance database..."): #Loading indicator
-            time.sleep(1.5) #Simulating processing delay
+        with st.spinner("🔍 Retrieving answer..."): #Loading indicator
             answer = get_compliance_answer(query)
-
         st.subheader("📝 Compliance Answer:")
         st.success(answer) #Displays answer in a highlightes box
     else:
