@@ -2,4 +2,4 @@ openai
 streamlit
 python-dotenv
 pinecone
-fitz
+PyMuPDF
